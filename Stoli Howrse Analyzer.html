@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Howrse Competition Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .skills-input {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .skills-input h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .skill-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .skill-row:last-child {
+            border-bottom: none;
+        }
+
+        .skill-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .skill-input {
+            width: 150px;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+
+        .skill-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .analyze-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .analyze-btn:active {
+            transform: scale(0.98);
+        }
+
+        .results {
+            display: none;
+        }
+
+        .skills-display {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .skills-display h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .skill-value {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .recommendations {
+            margin-top: 30px;
+        }
+
+        .recommendations h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            background: #f0f2ff;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .competition-card.hidden {
+            display: none;
+        }
+
+        .competition-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .competition-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .competition-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .competition-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .competition-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        .competition-type {
+            display: inline-block;
+            background: #f0f2ff;
+            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .skill-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .skill-chip {
+            background: #f8f9ff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .skill-label {
+            font-weight: 600;
+            color: #764ba2;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .skill-amount {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .reset-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐴 Howrse Competition Analyzer</h1>
+            <p>Enter your horse's skills to find the best competitions!</p>
+        </div>
+
+        <div class="content">
+            <div class="skills-input" id="inputSection">
+                <h3>Enter Your Horse's Skills</h3>
+                <div class="skill-row">
+                    <span class="skill-name">Stamina</span>
+                    <input type="number" id="input-stamina" step="0.01" class="skill-input" placeholder="0.00">
+                </div>
+                <div class="skill-row">
+                    <span class="skill-name">Speed</span>
+                    <input type="number" id="input-speed" step="0.01" class="skill-input" placeholder="0.00">
+                </div>
+                <div class="skill-row">
+                    <span class="skill-name">Dressage</span>
+                    <input type="number" id="input-dressage" step="0.01" class="skill-input" placeholder="0.00">
+                </div>
+                <div class="skill-row">
+                    <span class="skill-name">Gallop</span>
+                    <input type="number" id="input-gallop" step="0.01" class="skill-input" placeholder="0.00">
+                </div>
+                <div class="skill-row">
+                    <span class="skill-name">Trot</span>
+                    <input type="number" id="input-trot" step="0.01" class="skill-input" placeholder="0.00">
+                </div>
+                <div class="skill-row">
+                    <span class="skill-name">Jumping</span>
+                    <input type="number" id="input-jumping" step="0.01" class="skill-input" placeholder="0.00">
+                </div>
+                <button class="analyze-btn" onclick="analyzeCompetitions()">Find Best Competitions</button>
+            </div>
+
+            <div class="results" id="results">
+                <div class="skills-display" id="skillsDisplay"></div>
+                <div class="recommendations" id="recommendations"></div>
+                <button class="reset-btn" onclick="reset()">Analyze Another Horse</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const competitions = {
+            classical: [
+                { name: "Trot", main: "Trot", secondary: "Speed", tertiary: "Dressage" },
+                { name: "Gallop", main: "Gallop", secondary: "Speed", tertiary: "Dressage" },
+                { name: "Dressage", main: "Dressage", secondary: "Trot", tertiary: "Gallop" },
+                { name: "Cross Country", main: "Stamina", secondary: "Dressage", tertiary: "Jumping" },
+                { name: "Show Jumping", main: "Jumping", secondary: "Speed", tertiary: "Dressage" }
+            ],
+            western: [
+                { name: "Barrel Racing", main: "Speed", secondary: "Gallop", tertiary: "Stamina" },
+                { name: "Cutting", main: "Stamina", secondary: "Dressage", tertiary: "Speed" },
+                { name: "Trail Class", main: "Dressage", secondary: "Trot", tertiary: "Jumping" },
+                { name: "Reining", main: "Gallop", secondary: "Dressage", tertiary: "Stamina" },
+                { name: "Western Pleasure", main: "Trot", secondary: "Stamina", tertiary: "Dressage" }
+            ]
+        };
+
+        // Allow Enter key to submit
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && document.getElementById('inputSection').style.display !== 'none') {
+                analyzeCompetitions();
+            }
+        });
+
+        function analyzeCompetitions() {
+            const skills = {
+                Stamina: parseFloat(document.getElementById('input-stamina').value) || 0,
+                Speed: parseFloat(document.getElementById('input-speed').value) || 0,
+                Dressage: parseFloat(document.getElementById('input-dressage').value) || 0,
+                Gallop: parseFloat(document.getElementById('input-gallop').value) || 0,
+                Trot: parseFloat(document.getElementById('input-trot').value) || 0,
+                Jumping: parseFloat(document.getElementById('input-jumping').value) || 0
+            };
+            
+            displayResults(skills);
+        }
+
+        function calculateScore(comp, skills) {
+            const mainSkill = skills[comp.main] || 0;
+            const secondarySkill = skills[comp.secondary] || 0;
+            const tertiarySkill = skills[comp.tertiary] || 0;
+            
+            // Weighted scoring: main skill has highest weight
+            return (mainSkill * 0.5) + (secondarySkill * 0.3) + (tertiarySkill * 0.2);
+        }
+
+        function displayResults(skills) {
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+
+            // Display skills
+            const skillsDisplay = document.getElementById('skillsDisplay');
+            skillsDisplay.innerHTML = '<h3>Your Horse\'s Skills</h3>';
+            Object.entries(skills).forEach(([skill, value]) => {
+                skillsDisplay.innerHTML += `
+                    <div class="skill-row">
+                        <span class="skill-name">${skill}</span>
+                        <span class="skill-value">${value.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+
+            // Calculate and display recommendations
+            const allCompetitions = [
+                ...competitions.classical.map(c => ({...c, type: 'Classical'})),
+                ...competitions.western.map(c => ({...c, type: 'Western'}))
+            ];
+
+            const scored = allCompetitions.map(comp => ({
+                ...comp,
+                score: calculateScore(comp, skills)
+            })).sort((a, b) => b.score - a.score);
+
+            const recommendationsDiv = document.getElementById('recommendations');
+            recommendationsDiv.innerHTML = `
+                <h3>🏆 Best Competitions for Your Horse</h3>
+                <div class="filter-section">
+                    <button class="filter-btn active" onclick="filterCompetitions('all')">All Competitions</button>
+                    <button class="filter-btn" onclick="filterCompetitions('classical')">Classical Only</button>
+                    <button class="filter-btn" onclick="filterCompetitions('western')">Western Only</button>
+                </div>
+            `;
+
+            scored.forEach((comp, index) => {
+                recommendationsDiv.innerHTML += `
+                    <div class="competition-card" data-type="${comp.type.toLowerCase()}">
+                        <div class="competition-header">
+                            <div>
+                                <div class="competition-name">${index + 1}. ${comp.name}</div>
+                                <span class="competition-type">${comp.type}</span>
+                            </div>
+                            <div class="competition-score">Score: ${comp.score.toFixed(0)}</div>
+                        </div>
+                        <div class="skill-breakdown">
+                            <div class="skill-chip">
+                                <div class="skill-label">Main</div>
+                                <div class="skill-amount">${comp.main}: ${skills[comp.main].toFixed(2)}</div>
+                            </div>
+                            <div class="skill-chip">
+                                <div class="skill-label">Secondary</div>
+                                <div class="skill-amount">${comp.secondary}: ${skills[comp.secondary].toFixed(2)}</div>
+                            </div>
+                            <div class="skill-chip">
+                                <div class="skill-label">Tertiary</div>
+                                <div class="skill-amount">${comp.tertiary}: ${skills[comp.tertiary].toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Scroll to results
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function reset() {
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            // Clear all inputs
+            document.getElementById('input-stamina').value = '';
+            document.getElementById('input-speed').value = '';
+            document.getElementById('input-dressage').value = '';
+            document.getElementById('input-gallop').value = '';
+            document.getElementById('input-trot').value = '';
+            document.getElementById('input-jumping').value = '';
+            
+            // Focus on first input
+            document.getElementById('input-stamina').focus();
+        }
+
+        function filterCompetitions(type) {
+            // Update active button
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Filter cards
+            const cards = document.querySelectorAll('.competition-card');
+            cards.forEach((card, index) => {
+                const cardType = card.getAttribute('data-type');
+                if (type === 'all' || cardType === type) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            // Renumber visible cards
+            let visibleIndex = 1;
+            cards.forEach(card => {
+                if (!card.classList.contains('hidden')) {
+                    const nameElement = card.querySelector('.competition-name');
+                    const text = nameElement.textContent;
+                    const nameWithoutNumber = text.substring(text.indexOf('.') + 2);
+                    nameElement.textContent = `${visibleIndex}. ${nameWithoutNumber}`;
+                    visibleIndex++;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

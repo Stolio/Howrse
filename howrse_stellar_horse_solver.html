@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stellar Horse Grid Solver — Howrse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #100E24;
+    --panel: #1A1738;
+    --panel-2: #211D46;
+    --line: #362F6E;
+    --gold: #D9B25C;
+    --gold-soft: #F0D896;
+    --text: #EDE9FB;
+    --text-dim: #A7A1CC;
+    --blue: #3E6BD8;
+    --orange: #DD8A2E;
+    --red: #C4394D;
+    --white-cell: #F4E9C4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 20% -10%, #23204a 0%, transparent 55%),
+      radial-gradient(circle at 90% 110%, #241f4a 0%, transparent 50%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:36px 16px 60px;
+  }
+  .wrap{width:100%;max-width:620px;}
+  header{text-align:center;margin-bottom:22px;}
+  h1{
+    font-family:'Cinzel',serif;
+    font-weight:700;
+    font-size:30px;
+    letter-spacing:0.04em;
+    margin:0 0 6px;
+    background:linear-gradient(180deg,var(--gold-soft),var(--gold) 70%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin:0 0 10px;
+  }
+  .sub{color:var(--text-dim);font-size:13.5px;line-height:1.5;max-width:440px;margin:0 auto;}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+    margin-top:18px;
+    box-shadow:0 12px 30px -14px rgba(0,0,0,0.6);
+  }
+
+  .controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .metric{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-dim);}
+  .metric select{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:12.5px;
+    font-family:'Inter',sans-serif;
+  }
+  .guesses-left{display:flex;align-items:center;gap:7px;}
+  .pip{width:11px;height:11px;border-radius:50%;background:var(--line);}
+  .pip.used{background:var(--gold);box-shadow:0 0 6px var(--gold);}
+  .guesses-label{font-family:'Space Mono',monospace;font-size:12px;color:var(--text-dim);margin-right:4px;}
+
+  .btnrow{display:flex;gap:8px;}
+  button.small{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:7px 12px;
+    border-radius:8px;
+    font-size:12.5px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    transition:border-color .15s;
+  }
+  button.small:hover{border-color:var(--gold);}
+  button.small:disabled{opacity:0.35;cursor:not-allowed;}
+
+  .gridcard{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    grid-template-rows:repeat(7,1fr);
+    gap:6px;
+    aspect-ratio:6/7;
+  }
+  .cell{
+    position:relative;
+    border-radius:8px;
+    background:#2A2558;
+    border:1px solid #3A3470;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    transition:transform .12s, box-shadow .2s, border-color .2s;
+  }
+  .cell:hover{transform:translateY(-1px);}
+  .cell.eliminated{
+    background:#1D1A3D;
+    color:#4A4478;
+    cursor:default;
+    background-image:repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.03) 5px, rgba(255,255,255,0.03) 6px);
+  }
+  .cell.candidate{border-color:var(--gold);box-shadow:inset 0 0 0 1px rgba(217,178,92,0.35);}
+  .cell.suggested{
+    border-color:var(--gold-soft);
+    box-shadow:0 0 0 2px rgba(240,216,150,0.5), 0 0 14px rgba(240,216,150,0.35);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 2px rgba(240,216,150,0.5), 0 0 14px rgba(240,216,150,0.25);}
+    50%{box-shadow:0 0 0 2px rgba(240,216,150,0.9), 0 0 20px rgba(240,216,150,0.55);}
+  }
+  .cell.blue{background:var(--blue);border-color:#5A85EA;color:#EAF0FF;}
+  .cell.orange{background:var(--orange);border-color:#F0A24C;color:#3A2200;}
+  .cell.red{background:var(--red);border-color:#DD5A6E;color:#FCE9EC;}
+  .cell.white{background:var(--white-cell);border-color:#FFF3CE;color:#5C4A12;font-size:18px;}
+  .cell .order{
+    position:absolute;
+    top:2px;left:4px;
+    font-size:9px;
+    opacity:0.75;
+  }
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:14px;font-size:11.5px;color:var(--text-dim);}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .swatch{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  .status{
+    text-align:center;
+    margin-top:14px;
+    font-size:13px;
+    color:var(--text-dim);
+    min-height:18px;
+  }
+  .status strong{color:var(--gold-soft);}
+
+  .log{margin-top:6px;}
+  .log-title{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);margin:18px 0 8px;}
+  .log-entry{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:7px 10px;
+    border-radius:8px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    font-size:12.5px;
+    margin-bottom:6px;
+    font-family:'Space Mono',monospace;
+  }
+  .log-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .log-dot.blue{background:var(--blue);} .log-dot.orange{background:var(--orange);}
+  .log-dot.red{background:var(--red);} .log-dot.white{background:var(--white-cell);}
+  .log-empty{color:var(--text-dim);font-size:12.5px;text-align:center;padding:10px 0;}
+
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(8,6,20,0.72);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+    width:100%;
+    max-width:340px;
+    text-align:center;
+  }
+  .modal h3{margin:0 0 4px;font-family:'Cinzel',serif;font-size:18px;color:var(--gold-soft);}
+  .modal p{margin:0 0 16px;color:var(--text-dim);font-size:12.5px;}
+  .choice{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .choice button{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:9px;
+    font-size:13px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    text-align:left;
+  }
+  .choice button:hover{border-color:var(--gold);}
+  .choice .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+  .cancel{margin-top:12px;background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;text-decoration:underline;}
+
+  .result-banner{
+    text-align:center;
+    padding:16px;
+    border-radius:10px;
+    margin-bottom:14px;
+    font-family:'Cinzel',serif;
+    font-size:16px;
+    display:none;
+  }
+  .result-banner.win{display:block;background:linear-gradient(135deg,#3a3216,#241f4a);color:var(--gold-soft);border:1px solid var(--gold);}
+  .result-banner.lose{display:block;background:#2A1A24;color:#E39BAA;border:1px solid var(--red);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Stellar Horse Grid Solver</h1>
+    <p class="eyebrow">Howrse — Stellar Horses</p>
+    <p class="sub">6 wide, 7 tall. Click a square to log a guess, then tell it what color came back — it'll cross off impossible squares and recommend your next best guess.</p>
+  </header>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="metric">
+        <span>Distance counts diagonals (king moves)</span>
+      </div>
+      <div class="guesses-left">
+        <span class="guesses-label" id="guessLabel">6 left</span>
+        <div id="pips" style="display:flex;gap:5px;"></div>
+      </div>
+    </div>
+
+    <div id="resultBanner" class="result-banner"></div>
+
+    <div class="gridcard">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--blue)"></span>More than 2 away</span>
+      <span><span class="swatch" style="background:var(--orange)"></span>2 away</span>
+      <span><span class="swatch" style="background:var(--red)"></span>1 away</span>
+      <span><span class="swatch" style="background:var(--white-cell)"></span>Found it</span>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="btnrow" style="justify-content:center;margin-top:14px;">
+      <button class="small" id="undoBtn">Undo last guess</button>
+      <button class="small" id="resetBtn">Reset</button>
+    </div>
+
+    <div class="log">
+      <div class="log-title">Guess Log</div>
+      <div id="logList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalCoord">Square</h3>
+    <p>What color did the game show for this square?</p>
+    <div class="choice">
+      <button data-cat="blue"><span class="dot" style="background:var(--blue)"></span> Blue — more than 2 away</button>
+      <button data-cat="orange"><span class="dot" style="background:var(--orange)"></span> Orange — 2 squares away</button>
+      <button data-cat="red"><span class="dot" style="background:var(--red)"></span> Red — 1 square away</button>
+      <button data-cat="white"><span class="dot" style="background:var(--white-cell)"></span> White + star — correct!</button>
+    </div>
+    <button class="cancel" id="cancelModal">Cancel</button>
+  </div>
+</div>
+
+<script>
+const COLS = 6;
+const ROWS = 7;
+const MAX_GUESSES = 6;
+let state = {
+  guesses: [], // {r,c,cat,order}
+  metric: 'chebyshev',
+  pendingCell: null,
+  won: false
+};
+
+const grid = document.getElementById('grid');
+const overlay = document.getElementById('overlay');
+const modalCoord = document.getElementById('modalCoord');
+const statusEl = document.getElementById('status');
+const logList = document.getElementById('logList');
+const pipsEl = document.getElementById('pips');
+const guessLabel = document.getElementById('guessLabel');
+const resultBanner = document.getElementById('resultBanner');
+const undoBtn = document.getElementById('undoBtn');
+
+function colLetter(c){ return String.fromCharCode(65+c); }
+function coordLabel(r,c){ return colLetter(c) + (r+1); }
+
+function distance(r1,c1,r2,c2){
+  const dr = Math.abs(r1-r2), dc = Math.abs(c1-c2);
+  return state.metric === 'chebyshev' ? Math.max(dr,dc) : dr+dc;
+}
+function categoryFromDistance(d){
+  if(d===0) return 'white';
+  if(d===1) return 'red';
+  if(d===2) return 'orange';
+  return 'blue';
+}
+function isConsistent(r,c){
+  for(const g of state.guesses){
+    if(categoryFromDistance(distance(r,c,g.r,g.c)) !== g.cat) return false;
+  }
+  return true;
+}
+function guessedAt(r,c){
+  return state.guesses.find(g=>g.r===r && g.c===c);
+}
+function candidateCells(){
+  const list = [];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(!guessedAt(r,c) && isConsistent(r,c)) list.push([r,c]);
+  }
+  return list;
+}
+function bestGuess(candidates){
+  if(candidates.length === 0) return null;
+  let best = null, bestWorst = Infinity;
+  // Only consider guessing squares that could still actually be the prize —
+  // that way every suggestion has a real chance of winning outright,
+  // not just narrowing down the field.
+  for(const [r,c] of candidates){
+    if(guessedAt(r,c)) continue;
+    const groups = {blue:0, orange:0, red:0, white:0};
+    for(const [cr,cc] of candidates){
+      const cat = categoryFromDistance(distance(r,c,cr,cc));
+      groups[cat]++;
+    }
+    const worst = Math.max(groups.blue, groups.orange, groups.red, groups.white);
+    if(worst < bestWorst){
+      bestWorst = worst;
+      best = [r,c];
+    }
+  }
+  return best;
+}
+
+function render(){
+  grid.innerHTML = '';
+  const candidates = candidateCells();
+  const candSet = new Set(candidates.map(([r,c])=>r+'-'+c));
+  const suggestion = (!state.won && state.guesses.length < MAX_GUESSES) ? bestGuess(candidates) : null;
+
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const g = guessedAt(r,c);
+      if(g){
+        cell.classList.add(g.cat);
+        cell.innerHTML = (g.cat==='white' ? '★' : '') + `<span class="order">${g.order}</span>`;
+      } else {
+        const consistent = candSet.has(r+'-'+c);
+        if(!consistent && state.guesses.length>0){
+          cell.classList.add('eliminated');
+        } else if(consistent && state.guesses.length>0){
+          cell.classList.add('candidate');
+        }
+        if(suggestion && suggestion[0]===r && suggestion[1]===c){
+          cell.classList.add('suggested');
+        }
+        cell.textContent = coordLabel(r,c);
+        cell.addEventListener('click', ()=>openModal(r,c));
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  // pips
+  pipsEl.innerHTML = '';
+  for(let i=0;i<MAX_GUESSES;i++){
+    const p = document.createElement('div');
+    p.className = 'pip' + (i < state.guesses.length ? ' used' : '');
+    pipsEl.appendChild(p);
+  }
+  guessLabel.textContent = (MAX_GUESSES - state.guesses.length) + ' left';
+
+  // status
+  if(state.won){
+    resultBanner.className = 'result-banner win';
+    resultBanner.textContent = `Stellar Horse found in ${state.guesses.length} guess${state.guesses.length===1?'':'es'}!`;
+    statusEl.innerHTML = '';
+  } else if(state.guesses.length >= MAX_GUESSES){
+    resultBanner.className = 'result-banner lose';
+    resultBanner.textContent = "Out of guesses — reset to try again.";
+    statusEl.innerHTML = '';
+  } else {
+    resultBanner.className = 'result-banner';
+    resultBanner.textContent = '';
+    if(state.guesses.length === 0){
+      statusEl.innerHTML = `Click any square to log your first guess. The <strong>glowing gold</strong> square is the best opening pick.`;
+    } else {
+      const n = candidates.length;
+      statusEl.innerHTML = suggestion
+        ? `<strong>${n}</strong> square${n===1?'':'s'} still possible. Try <strong>${coordLabel(suggestion[0],suggestion[1])}</strong> next — glowing on the grid.`
+        : `<strong>${n}</strong> squares still possible.`;
+    }
+  }
+
+  undoBtn.disabled = state.guesses.length === 0;
+
+  // log
+  if(state.guesses.length === 0){
+    logList.innerHTML = '<div class="log-empty">No guesses yet</div>';
+  } else {
+    logList.innerHTML = '';
+    [...state.guesses].reverse().forEach(g=>{
+      const catText = {blue:'more than 2 away', orange:'2 away', red:'1 away', white:'correct!'}[g.cat];
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML = `<span class="log-dot ${g.cat}"></span> Guess ${g.order}: <strong style="color:var(--text)">${coordLabel(g.r,g.c)}</strong> — ${catText}`;
+      logList.appendChild(div);
+    });
+  }
+}
+
+function openModal(r,c){
+  if(state.won || state.guesses.length >= MAX_GUESSES) return;
+  state.pendingCell = [r,c];
+  modalCoord.textContent = 'Square ' + coordLabel(r,c);
+  overlay.classList.add('show');
+}
+function closeModal(){
+  overlay.classList.remove('show');
+  state.pendingCell = null;
+}
+
+document.querySelectorAll('.choice button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    if(!state.pendingCell) return;
+    const [r,c] = state.pendingCell;
+    const cat = btn.dataset.cat;
+    state.guesses.push({r,c,cat, order: state.guesses.length+1});
+    if(cat === 'white') state.won = true;
+    closeModal();
+    render();
+  });
+});
+document.getElementById('cancelModal').addEventListener('click', closeModal);
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
+
+undoBtn.addEventListener('click', ()=>{
+  state.guesses.pop();
+  state.won = state.guesses.some(g=>g.cat==='white');
+  render();
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  state.guesses = [];
+  state.won = false;
+  render();
+});
+render();
+</script>
+</body>
+</html>
